@@ -1,8 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users } from "lucide-react";
+import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users, LogIn } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 const Navigation = () => {
   const location = useLocation();
+  const { user, loading } = useAuth();
   
   const navItems = [
     { path: "/ideas", label: "Ideas", icon: Sparkles },
@@ -10,8 +13,14 @@ const Navigation = () => {
     { path: "/pitch", label: "Pitch", icon: Megaphone },
     { path: "/judge-qa", label: "Judge Q&A", icon: Scale },
     { path: "/my-ideas", label: "My Ideas", icon: BookmarkCheck },
-    { path: "/ideation-rooms", label: "Rooms", icon: Users },
+    { path: "/dashboard", label: "Rooms", icon: Users },
   ];
+
+  // Don't show nav on login page
+  if (location.pathname === '/login') return null;
+
+  // Don't show nav on room pages (they have their own header)
+  if (location.pathname.startsWith('/rooms/') || location.pathname.startsWith('/join/')) return null;
 
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -25,7 +34,8 @@ const Navigation = () => {
           <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname === item.path || 
+                (item.path === '/dashboard' && location.pathname.startsWith('/dashboard'));
               return (
                 <Link
                   key={item.path}
@@ -41,12 +51,22 @@ const Navigation = () => {
                 </Link>
               );
             })}
+            
+            {!loading && !user && (
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="ml-2 gap-2">
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Button>
+              </Link>
+            )}
           </div>
 
           <div className="md:hidden flex items-center gap-2">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname === item.path ||
+                (item.path === '/dashboard' && location.pathname.startsWith('/dashboard'));
               return (
                 <Link
                   key={item.path}
@@ -61,6 +81,12 @@ const Navigation = () => {
                 </Link>
               );
             })}
+            
+            {!loading && !user && (
+              <Link to="/login" className="p-2 rounded-lg hover:bg-muted text-muted-foreground">
+                <LogIn className="h-5 w-5" />
+              </Link>
+            )}
           </div>
         </div>
       </div>
