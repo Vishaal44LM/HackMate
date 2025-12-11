@@ -86,20 +86,29 @@ export type Database = {
       }
       room_participants: {
         Row: {
+          device_id: string | null
           id: string
+          is_active: boolean
           joined_at: string
+          last_seen: string
           room_id: string
           user_id: string
         }
         Insert: {
+          device_id?: string | null
           id?: string
+          is_active?: boolean
           joined_at?: string
+          last_seen?: string
           room_id: string
           user_id: string
         }
         Update: {
+          device_id?: string | null
           id?: string
+          is_active?: boolean
           joined_at?: string
+          last_seen?: string
           room_id?: string
           user_id?: string
         }
@@ -117,30 +126,36 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          current_user_count: number
           description: string | null
           id: string
           max_participants: number
           name: string
+          status: string
           theme: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by: string
+          current_user_count?: number
           description?: string | null
           id?: string
           max_participants?: number
           name: string
+          status?: string
           theme: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string
+          current_user_count?: number
           description?: string | null
           id?: string
           max_participants?: number
           name?: string
+          status?: string
           theme?: string
           updated_at?: string
         }
@@ -151,7 +166,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_inactive_participants: { Args: never; Returns: undefined }
+      join_room: {
+        Args: { p_device_id?: string; p_room_id: string; p_user_id: string }
+        Returns: Json
+      }
+      leave_room: {
+        Args: { p_room_id: string; p_user_id: string }
+        Returns: Json
+      }
+      room_heartbeat: {
+        Args: { p_room_id: string; p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
