@@ -17,10 +17,10 @@ import {
   LogOut, 
   Menu, 
   AlertCircle,
-  CheckCircle,
   Wifi,
-  WifiOff,
-  MonitorSmartphone
+  MonitorSmartphone,
+  RefreshCw,
+  Lock
 } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
@@ -38,7 +38,8 @@ const Room = () => {
     error,
     joinRoom,
     leaveRoom,
-    sendMessage
+    sendMessage,
+    regenerateJoinCode
   } = useRoom(roomId);
   
   const [newMessage, setNewMessage] = useState("");
@@ -47,7 +48,10 @@ const Room = () => {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [showMobileUsers, setShowMobileUsers] = useState(false);
   const [multiDeviceWarning, setMultiDeviceWarning] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const isHost = room && user && room.created_by === user.id;
 
   // Check if user is already in room from another device
   useEffect(() => {
@@ -67,7 +71,13 @@ const Room = () => {
     const attemptJoin = async () => {
       if (!user || !roomId || hasJoined || loading) return;
       
-      const result = await joinRoom();
+      // Get stored join code from session storage
+      const storedJoinCode = sessionStorage.getItem(`join_code_${roomId}`);
+      
+      const result = await joinRoom(storedJoinCode || undefined);
+      
+      // Clear stored code after use
+      sessionStorage.removeItem(`join_code_${roomId}`);
       
       if (result.success) {
         setHasJoined(true);
@@ -124,13 +134,33 @@ const Room = () => {
     navigate("/dashboard");
   };
 
-  const handleCopyInviteLink = () => {
-    const inviteUrl = `${window.location.origin}/join/${roomId}`;
-    navigator.clipboard.writeText(inviteUrl);
-    toast({
-      title: "Link copied!",
-      description: "Share this link to invite others."
-    });
+  const handleCopyJoinCode = () => {
+    if (room?.join_code) {
+      navigator.clipboard.writeText(room.join_code);
+      toast({
+        title: "Code copied!",
+        description: `Share code "${room.join_code}" with your teammates.`
+      });
+    }
+  };
+
+  const handleRegenerateCode = async () => {
+    setRegenerating(true);
+    const result = await regenerateJoinCode();
+    setRegenerating(false);
+    
+    if (result.success) {
+      toast({
+        title: "Code regenerated",
+        description: `New code: ${result.join_code}. Old code is now invalid.`
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to regenerate code",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) return <LoadingSpinner />;
@@ -159,11 +189,47 @@ const Room = () => {
   const isUserInRoom = participants.some(p => p.user_id === user?.id);
   const activeParticipantsCount = participants.filter(p => p.is_active).length;
 
+  // Host controls component
+  const HostControls = () => {
+    if (!isHost) return null;
+    
+    return (
+      <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Lock className="w-4 h-4 text-primary" />
+          Host Controls
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Share this code with teammates:</p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-background rounded-md px-3 py-2 font-mono text-lg tracking-widest text-center border">
+              {room.join_code}
+            </div>
+            <Button size="icon" variant="outline" onClick={handleCopyJoinCode}>
+              <Copy className="w-4 h-4" />
+            </Button>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="w-full text-xs gap-2"
+            onClick={handleRegenerateCode}
+            disabled={regenerating}
+          >
+            <RefreshCw className={`w-3 h-3 ${regenerating ? 'animate-spin' : ''}`} />
+            {regenerating ? "Regenerating..." : "Regenerate code"}
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   // Participant list component (used in both desktop sidebar and mobile sheet)
   const ParticipantsList = () => (
     <div className="space-y-2">
       {participants.filter(p => p.is_active).map((p, i) => {
         const isCurrentUser = p.user_id === user?.id;
+        const isParticipantHost = room && p.user_id === room.created_by;
         return (
           <div 
             key={p.id} 
@@ -182,8 +248,9 @@ const Room = () => {
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-background" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className="text-sm font-medium truncate flex items-center gap-1">
                 {isCurrentUser ? 'You' : `Participant ${i + 1}`}
+                {isParticipantHost && <Badge variant="outline" className="text-xs ml-1">Host</Badge>}
               </p>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Wifi className="w-3 h-3 text-green-500" />
@@ -236,7 +303,10 @@ const Room = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="min-w-0">
-                <h1 className="font-semibold text-sm sm:text-base truncate">{room.name}</h1>
+                <h1 className="font-semibold text-sm sm:text-base truncate flex items-center gap-2">
+                  {room.name}
+                  {isHost && <Badge variant="outline" className="text-xs">Host</Badge>}
+                </h1>
                 <Badge variant="outline" className="text-xs hidden sm:inline-flex">{room.theme}</Badge>
               </div>
             </div>
@@ -252,24 +322,28 @@ const Room = () => {
 
             {/* Right - Actions */}
             <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyInviteLink}
-                className="hidden sm:flex gap-1"
-              >
-                <Copy className="h-4 w-4" />
-                <span className="hidden md:inline">Copy Link</span>
-              </Button>
+              {isHost && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyJoinCode}
+                  className="hidden sm:flex gap-1"
+                >
+                  <Copy className="h-4 w-4" />
+                  <span className="hidden md:inline">Copy Code</span>
+                </Button>
+              )}
               
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleCopyInviteLink}
-                className="sm:hidden"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
+              {isHost && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopyJoinCode}
+                  className="sm:hidden"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              )}
 
               <Button
                 variant="outline"
@@ -304,7 +378,10 @@ const Room = () => {
                       Participants ({activeParticipantsCount}/{room.max_participants})
                     </SheetTitle>
                   </SheetHeader>
-                  <div className="mt-6">
+                  <div className="mt-6 space-y-6">
+                    {/* Host Controls in Mobile */}
+                    <HostControls />
+                    
                     <ParticipantsList />
                   </div>
                   
@@ -384,9 +461,7 @@ const Room = () => {
                               {isAI ? "AI Assistant" : isOwn ? "You" : msg.user_email?.split('@')[0] || "User"}
                             </span>
                           </div>
-                          <p className={`text-sm break-words ${
-                            isOwn && !isAI ? '' : ''
-                          }`}>
+                          <p className={`text-sm break-words`}>
                             {msg.message}
                           </p>
                         </div>
@@ -422,6 +497,9 @@ const Room = () => {
 
         {/* Desktop Sidebar */}
         <div className="hidden lg:flex flex-col gap-4 w-80 shrink-0">
+          {/* Host Controls */}
+          <HostControls />
+          
           {/* Participants */}
           <Card>
             <CardHeader className="py-3">

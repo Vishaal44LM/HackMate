@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
-import { Sparkles, Mail, Lock, Chrome } from "lucide-react";
+import { Sparkles, Mail, Lock } from "lucide-react";
 import { z } from "zod";
 
 const authSchema = z.object({
@@ -21,7 +20,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
-  const { user, signInWithEmail, signUpWithEmail, signInWithGoogle } = useAuth();
+  const { user, signInWithEmail, signUpWithEmail } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -91,21 +90,6 @@ const Login = () => {
     }
   };
 
-  const handleGoogleAuth = async () => {
-    setLoading(true);
-    try {
-      const { error } = await signInWithGoogle();
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Google Sign-In Error",
-        description: error.message || "Failed to sign in with Google.",
-        variant: "destructive"
-      });
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 px-4 py-12">
       <div className="w-full max-w-md space-y-6">
@@ -135,29 +119,6 @@ const Login = () => {
           </CardHeader>
           
           <CardContent className="space-y-4">
-            {/* Google Sign In */}
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-11 gap-2"
-              onClick={handleGoogleAuth}
-              disabled={loading}
-            >
-              <Chrome className="h-5 w-5" />
-              Continue with Google
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with email
-                </span>
-              </div>
-            </div>
-
             {/* Email/Password Form */}
             <form onSubmit={handleAuth} className="space-y-4">
               <div className="space-y-2">
