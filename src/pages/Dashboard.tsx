@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, LogOut, ArrowRight, Hash, Sparkles } from "lucide-react";
+import { Users, Plus, LogOut, ArrowRight, Hash, Sparkles, Copy, Lock } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,9 +18,12 @@ const Dashboard = () => {
   const { rooms, myRooms, loading, createRoom, fetchRooms, fetchMyRooms } = useRooms();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [joinCodeModalOpen, setJoinCodeModalOpen] = useState(false);
   const [newRoom, setNewRoom] = useState({ name: "", theme: "", description: "" });
   const [joinCode, setJoinCode] = useState("");
+  const [selectedRoomForJoin, setSelectedRoomForJoin] = useState<{ id: string; name: string } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [createdRoomCode, setCreatedRoomCode] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -39,9 +42,10 @@ const Dashboard = () => {
     setActionLoading(false);
 
     if (result.success && result.roomId) {
+      setCreatedRoomCode(result.joinCode || null);
       toast({
         title: "Room created!",
-        description: "Your ideation room is ready."
+        description: "Your ideation room is ready. Share the join code with your team."
       });
       setCreateDialogOpen(false);
       setNewRoom({ name: "", theme: "", description: "" });
@@ -56,11 +60,11 @@ const Dashboard = () => {
   };
 
   const handleJoinByCode = async () => {
-    const code = joinCode.trim();
+    const code = joinCode.trim().toUpperCase();
     if (!code) {
       toast({
         title: "Missing code",
-        description: "Please enter a room code or ID.",
+        description: "Please enter a join code.",
         variant: "destructive"
       });
       return;
@@ -68,28 +72,19 @@ const Dashboard = () => {
 
     setActionLoading(true);
 
-    // Try to find room by ID
+    // Find room by join code
     const { data: room, error } = await supabase
       .from('rooms')
-      .select('id, status, current_user_count, max_participants')
-      .eq('id', code)
+      .select('id, status, current_user_count, max_participants, name')
+      .eq('join_code', code)
+      .eq('status', 'active')
       .single();
 
     if (error || !room) {
       setActionLoading(false);
       toast({
-        title: "Room not found",
-        description: "Please check the room code and try again.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (room.status !== 'active') {
-      setActionLoading(false);
-      toast({
-        title: "Room unavailable",
-        description: "This room is no longer active.",
+        title: "Invalid join code",
+        description: "Please check the code and try again.",
         variant: "destructive"
       });
       return;
@@ -105,14 +100,89 @@ const Dashboard = () => {
       return;
     }
 
+    // Store the code for when they enter the room
+    sessionStorage.setItem(`join_code_${room.id}`, code);
+    
     setActionLoading(false);
     setJoinDialogOpen(false);
     setJoinCode("");
     navigate(`/rooms/${room.id}`);
   };
 
-  const handleEnterRoom = (roomId: string) => {
-    navigate(`/rooms/${roomId}`);
+  const handleEnterRoom = (roomId: string, isMyRoom: boolean) => {
+    if (isMyRoom) {
+      // Already a member, no code needed
+      navigate(`/rooms/${roomId}`);
+    } else {
+      // Need to show join code modal
+      const room = rooms.find(r => r.id === roomId);
+      if (room) {
+        setSelectedRoomForJoin({ id: room.id, name: room.name });
+        setJoinCodeModalOpen(true);
+      }
+    }
+  };
+
+  const handleJoinWithCode = async () => {
+    if (!selectedRoomForJoin) return;
+    
+    const code = joinCode.trim().toUpperCase();
+    if (!code) {
+      toast({
+        title: "Missing code",
+        description: "Please enter the join code.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setActionLoading(true);
+
+    // Verify the code matches this room
+    const { data: room, error } = await supabase
+      .from('rooms')
+      .select('id, join_code, current_user_count, max_participants')
+      .eq('id', selectedRoomForJoin.id)
+      .single();
+
+    if (error || !room) {
+      setActionLoading(false);
+      toast({
+        title: "Error",
+        description: "Failed to verify room.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (room.join_code !== code) {
+      setActionLoading(false);
+      toast({
+        title: "Invalid join code",
+        description: "The code you entered doesn't match.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (room.current_user_count >= room.max_participants) {
+      setActionLoading(false);
+      toast({
+        title: "Room full",
+        description: "Someone joined just now, room is now full. You cannot join this room.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Store the code for room entry
+    sessionStorage.setItem(`join_code_${room.id}`, code);
+    
+    setActionLoading(false);
+    setJoinCodeModalOpen(false);
+    setJoinCode("");
+    setSelectedRoomForJoin(null);
+    navigate(`/rooms/${room.id}`);
   };
 
   const handleLogout = async () => {
@@ -147,20 +217,22 @@ const Dashboard = () => {
                 <DialogHeader>
                   <DialogTitle>Join Room by Code</DialogTitle>
                   <DialogDescription>
-                    Enter the room ID or code to join an existing room
+                    Enter the 6-character join code shared by the room host
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <Input
-                    placeholder="Enter room code or ID"
+                    placeholder="Enter join code (e.g. A7FXQ9)"
                     value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value)}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                     onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
+                    maxLength={6}
+                    className="text-center text-lg tracking-widest font-mono"
                   />
                   <Button
                     onClick={handleJoinByCode}
                     className="w-full bg-gradient-to-r from-primary to-secondary"
-                    disabled={actionLoading || !joinCode.trim()}
+                    disabled={actionLoading || joinCode.trim().length < 6}
                   >
                     {actionLoading ? "Joining..." : "Join Room"}
                   </Button>
@@ -208,6 +280,10 @@ const Dashboard = () => {
                     <Users className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">Max participants: 5 (fixed)</span>
                   </div>
+                  <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <Lock className="w-4 h-4 text-primary" />
+                    <span className="text-sm text-foreground">A unique join code will be generated for you to share</span>
+                  </div>
                   <Button
                     onClick={handleCreateRoom}
                     className="w-full bg-gradient-to-r from-primary to-secondary"
@@ -225,6 +301,54 @@ const Dashboard = () => {
             </Button>
           </div>
         </div>
+
+        {/* Join Code Modal */}
+        <Dialog open={joinCodeModalOpen} onOpenChange={(open) => {
+          setJoinCodeModalOpen(open);
+          if (!open) {
+            setJoinCode("");
+            setSelectedRoomForJoin(null);
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Enter Join Code</DialogTitle>
+              <DialogDescription>
+                Enter the join code to access "{selectedRoomForJoin?.name}"
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                placeholder="Enter join code"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && handleJoinWithCode()}
+                maxLength={6}
+                className="text-center text-lg tracking-widest font-mono"
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setJoinCodeModalOpen(false);
+                    setJoinCode("");
+                    setSelectedRoomForJoin(null);
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleJoinWithCode}
+                  className="flex-1 bg-gradient-to-r from-primary to-secondary"
+                  disabled={actionLoading || joinCode.trim().length < 6}
+                >
+                  {actionLoading ? "Joining..." : "Join"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* My Rooms Section */}
         <section className="mb-10">
@@ -279,7 +403,7 @@ const Dashboard = () => {
                       </p>
                     )}
                     <Button
-                      onClick={() => handleEnterRoom(room.id)}
+                      onClick={() => handleEnterRoom(room.id, true)}
                       className="w-full gap-2 group-hover:bg-primary"
                       variant="outline"
                     >
@@ -297,7 +421,7 @@ const Dashboard = () => {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Users className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">All Available Rooms</h2>
+            <h2 className="text-xl font-semibold">All Rooms</h2>
             <Badge variant="secondary">{rooms.length}</Badge>
           </div>
 
@@ -316,7 +440,7 @@ const Dashboard = () => {
                 return (
                   <Card 
                     key={room.id} 
-                    className={`group transition-all ${isFull ? 'opacity-60' : 'hover:shadow-lg hover:border-primary/30'}`}
+                    className={`group transition-all ${isFull && !isMyRoom ? 'opacity-60' : 'hover:shadow-lg hover:border-primary/30'}`}
                   >
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
@@ -324,6 +448,7 @@ const Dashboard = () => {
                           <CardTitle className="text-lg truncate flex items-center gap-2">
                             {room.name}
                             {isMyRoom && <Badge variant="outline" className="text-xs">Joined</Badge>}
+                            {room.is_private && <Lock className="w-3 h-3 text-muted-foreground" />}
                           </CardTitle>
                           <CardDescription className="truncate">{room.theme}</CardDescription>
                         </div>
@@ -343,9 +468,9 @@ const Dashboard = () => {
                         </p>
                       )}
                       <Button
-                        onClick={() => handleEnterRoom(room.id)}
+                        onClick={() => handleEnterRoom(room.id, isMyRoom)}
                         className="w-full"
-                        variant={isFull ? "outline" : "default"}
+                        variant={isFull && !isMyRoom ? "outline" : "default"}
                         disabled={isFull && !isMyRoom}
                       >
                         {isFull && !isMyRoom ? "Room Full" : isMyRoom ? "Enter Room" : "Join Room"}

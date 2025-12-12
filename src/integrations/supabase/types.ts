@@ -129,6 +129,8 @@ export type Database = {
           current_user_count: number
           description: string | null
           id: string
+          is_private: boolean
+          join_code: string
           max_participants: number
           name: string
           status: string
@@ -141,6 +143,8 @@ export type Database = {
           current_user_count?: number
           description?: string | null
           id?: string
+          is_private?: boolean
+          join_code: string
           max_participants?: number
           name: string
           status?: string
@@ -153,6 +157,8 @@ export type Database = {
           current_user_count?: number
           description?: string | null
           id?: string
+          is_private?: boolean
+          join_code?: string
           max_participants?: number
           name?: string
           status?: string
@@ -167,11 +173,26 @@ export type Database = {
     }
     Functions: {
       cleanup_inactive_participants: { Args: never; Returns: undefined }
-      join_room: {
-        Args: { p_device_id?: string; p_room_id: string; p_user_id: string }
+      generate_join_code: { Args: never; Returns: string }
+      join_room:
+        | {
+            Args: { p_device_id?: string; p_room_id: string; p_user_id: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_device_id?: string
+              p_join_code?: string
+              p_room_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+      leave_room: {
+        Args: { p_room_id: string; p_user_id: string }
         Returns: Json
       }
-      leave_room: {
+      regenerate_join_code: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: Json
       }

@@ -13,6 +13,8 @@ interface Room {
   max_participants: number;
   current_user_count: number;
   status: string;
+  join_code: string;
+  is_private: boolean;
 }
 
 interface Participant {
@@ -131,7 +133,7 @@ export const useRoom = (roomId: string | undefined) => {
   }, [roomId]);
 
   // Join room using atomic function
-  const joinRoom = useCallback(async () => {
+  const joinRoom = useCallback(async (joinCode?: string) => {
     if (!user || !roomId) return { success: false, error: 'Missing user or room ID' };
     
     const deviceId = getDeviceId();
@@ -139,7 +141,8 @@ export const useRoom = (roomId: string | undefined) => {
     const { data, error } = await supabase.rpc('join_room', {
       p_room_id: roomId,
       p_user_id: user.id,
-      p_device_id: deviceId
+      p_device_id: deviceId,
+      p_join_code: joinCode || null
     });
     
     if (error) {
@@ -158,6 +161,28 @@ export const useRoom = (roomId: string | undefined) => {
     
     return { success: true, alreadyMember: result.already_member };
   }, [user, roomId, fetchRoom, fetchParticipants]);
+
+  // Regenerate join code (host only)
+  const regenerateJoinCode = useCallback(async () => {
+    if (!user || !roomId) return { success: false, error: 'Missing user or room ID' };
+    
+    const { data, error } = await supabase.rpc('regenerate_join_code', {
+      p_room_id: roomId,
+      p_user_id: user.id
+    });
+    
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    
+    const result = data as { success: boolean; error?: string; join_code?: string };
+    
+    if (result.success) {
+      await fetchRoom();
+    }
+    
+    return result;
+  }, [user, roomId, fetchRoom]);
 
   // Leave room
   const leaveRoom = useCallback(async () => {
@@ -342,6 +367,7 @@ export const useRoom = (roomId: string | undefined) => {
     joinRoom,
     leaveRoom,
     sendMessage,
+    regenerateJoinCode,
     fetchRoom,
     fetchParticipants
   };
@@ -405,7 +431,8 @@ export const useRooms = () => {
         created_by: user.id,
         max_participants: 5,
         current_user_count: 0,
-        status: 'active'
+        status: 'active',
+        is_private: true
       })
       .select()
       .single();
@@ -414,18 +441,19 @@ export const useRooms = () => {
       return { success: false, error: error.message };
     }
     
-    // Join the room as creator
+    // Join the room as creator (no code needed for creator)
     const { error: joinError } = await supabase.rpc('join_room', {
       p_room_id: data.id,
       p_user_id: user.id,
-      p_device_id: getDeviceId()
+      p_device_id: getDeviceId(),
+      p_join_code: null
     });
     
     if (joinError) {
       return { success: false, error: joinError.message, roomId: data.id };
     }
     
-    return { success: true, roomId: data.id };
+    return { success: true, roomId: data.id, joinCode: data.join_code };
   }, [user]);
 
   // Setup realtime subscription for rooms
