@@ -5,6 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import OutputCard from "@/components/OutputCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import FocusModeToggle from "@/components/FocusModeToggle";
+import { useFocusMode } from "@/hooks/useFocusMode";
 import { callEdgeFunctionWithRetry } from "@/lib/edgeFunctions";
 
 const ExpandIdea = () => {
@@ -15,6 +17,7 @@ const ExpandIdea = () => {
     return sessionStorage.getItem('hackmate_expansion') !== null;
   });
   const { toast } = useToast();
+  const { isFocusMode } = useFocusMode();
 
   useEffect(() => {
     sessionStorage.setItem('hackmate_expand_idea', idea);
@@ -64,7 +67,11 @@ const ExpandIdea = () => {
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
-      <div className="container mx-auto px-4 py-12">
+      <FocusModeToggle />
+      <div className="focus-helper fixed bottom-4 left-4 z-50 bg-muted/80 backdrop-blur-sm px-3 py-2 rounded-lg text-xs text-muted-foreground">
+        Focus mode on – press Esc to exit
+      </div>
+      <div className={`container mx-auto px-4 py-12 main-content ${isFocusMode ? 'pt-16' : ''}`}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
