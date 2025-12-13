@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoom } from "@/hooks/useRoom";
+import { useFocusMode } from "@/hooks/useFocusMode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import FocusModeToggle from "@/components/FocusModeToggle";
+import FinalSubmission from "@/components/FinalSubmission";
 import { 
   ArrowLeft, 
   Send, 
@@ -29,6 +32,7 @@ const Room = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isFocusMode } = useFocusMode();
   const {
     room,
     participants,
@@ -39,7 +43,8 @@ const Room = () => {
     joinRoom,
     leaveRoom,
     sendMessage,
-    regenerateJoinCode
+    regenerateJoinCode,
+    saveFinalSubmission
   } = useRoom(roomId);
   
   const [newMessage, setNewMessage] = useState("");
@@ -278,8 +283,16 @@ const Room = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Focus Mode Toggle */}
+      <FocusModeToggle />
+      
+      {/* Focus Mode Helper */}
+      <div className="focus-helper fixed bottom-4 left-4 z-50 bg-muted/80 backdrop-blur-sm px-3 py-2 rounded-lg text-xs text-muted-foreground">
+        Focus mode on – press Esc to exit
+      </div>
+
       {/* Multi-device warning banner */}
-      {multiDeviceWarning && (
+      {multiDeviceWarning && !isFocusMode && (
         <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-2">
           <MonitorSmartphone className="w-4 h-4 text-amber-500" />
           <p className="text-sm text-amber-600 dark:text-amber-400">
@@ -288,8 +301,8 @@ const Room = () => {
         </div>
       )}
 
-      {/* Top Bar */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+      {/* Top Bar - Hidden in Focus Mode */}
+      <header className={`border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40 ${isFocusMode ? 'hidden' : ''}`}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14 gap-2">
             {/* Left - Back button and room name */}
@@ -379,6 +392,17 @@ const Room = () => {
                     </SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 space-y-6">
+                    {/* Final Submission in Mobile */}
+                    <FinalSubmission
+                      roomId={room.id}
+                      pitchLink={room.final_pitch_link}
+                      demoLink={room.final_demo_link}
+                      repoLink={room.final_repo_link}
+                      summary={room.final_summary}
+                      canEdit={isHost || false}
+                      onSave={saveFinalSubmission}
+                    />
+                    
                     {/* Host Controls in Mobile */}
                     <HostControls />
                     
@@ -413,8 +437,9 @@ const Room = () => {
         </div>
       </header>
 
+
       {/* Main Content */}
-      <div className="flex-1 container mx-auto px-4 py-4 flex gap-4">
+      <div className={`flex-1 container mx-auto px-4 py-4 flex gap-4 main-content ${isFocusMode ? 'pt-16' : ''}`}>
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0">
           <Card className="flex-1 flex flex-col">
@@ -496,7 +521,18 @@ const Room = () => {
         </div>
 
         {/* Desktop Sidebar */}
-        <div className="hidden lg:flex flex-col gap-4 w-80 shrink-0">
+        <div className={`hidden lg:flex flex-col gap-4 w-80 shrink-0 ${isFocusMode ? '!hidden' : ''}`}>
+          {/* Final Submission */}
+          <FinalSubmission
+            roomId={room.id}
+            pitchLink={room.final_pitch_link}
+            demoLink={room.final_demo_link}
+            repoLink={room.final_repo_link}
+            summary={room.final_summary}
+            canEdit={isHost || false}
+            onSave={saveFinalSubmission}
+          />
+
           {/* Host Controls */}
           <HostControls />
           
