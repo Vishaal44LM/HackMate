@@ -111,31 +111,3 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
-
-/* Focus Mode Styles */
-.focus-mode .top-nav,
-.focus-mode .app-footer,
-.focus-mode .progress-bar-container {
-  display: none !important;
-}
-
-.focus-mode .main-content {
-  max-width: 960px;
-  margin: 0 auto;
-  padding-top: 24px;
-  padding-bottom: 24px;
-  box-shadow: 0 0 60px hsl(var(--primary) / 0.1);
-  border-radius: 16px;
-}
-
-.focus-mode {
-  background-color: hsl(222 47% 8%);
-}
-
-.focus-mode .focus-helper {
-  display: block;
-}
-
-.focus-helper {
-  display: none;
-}

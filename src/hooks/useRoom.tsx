@@ -15,10 +15,6 @@ interface Room {
   status: string;
   join_code: string;
   is_private: boolean;
-  final_pitch_link: string | null;
-  final_demo_link: string | null;
-  final_repo_link: string | null;
-  final_summary: string | null;
 }
 
 interface Participant {
@@ -361,38 +357,6 @@ export const useRoom = (roomId: string | undefined) => {
     };
   }, [roomId, fetchParticipants, fetchRoom]);
 
-  // Save final submission
-  const saveFinalSubmission = useCallback(async (data: {
-    pitchLink: string;
-    demoLink: string;
-    repoLink: string;
-    summary: string;
-  }) => {
-    if (!user || !roomId || !room) return { success: false, error: 'Not authenticated or no room' };
-    
-    // Only host can edit
-    if (room.created_by !== user.id) {
-      return { success: false, error: 'Only the host can edit the final submission' };
-    }
-    
-    const { error } = await supabase
-      .from('rooms')
-      .update({
-        final_pitch_link: data.pitchLink || null,
-        final_demo_link: data.demoLink || null,
-        final_repo_link: data.repoLink || null,
-        final_summary: data.summary || null
-      })
-      .eq('id', roomId);
-    
-    if (error) {
-      return { success: false, error: error.message };
-    }
-    
-    await fetchRoom();
-    return { success: true };
-  }, [user, roomId, room, fetchRoom]);
-
   return {
     room,
     participants,
@@ -404,7 +368,6 @@ export const useRoom = (roomId: string | undefined) => {
     leaveRoom,
     sendMessage,
     regenerateJoinCode,
-    saveFinalSubmission,
     fetchRoom,
     fetchParticipants
   };
@@ -461,7 +424,7 @@ export const useRooms = () => {
     
     const { data, error } = await supabase
       .from('rooms')
-      .insert([{
+      .insert({
         name,
         theme,
         description,
@@ -469,9 +432,8 @@ export const useRooms = () => {
         max_participants: 5,
         current_user_count: 0,
         status: 'active',
-        is_private: true,
-        join_code: '' // Will be overwritten by trigger
-      }])
+        is_private: true
+      })
       .select()
       .single();
     

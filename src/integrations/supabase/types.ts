@@ -128,10 +128,6 @@ export type Database = {
           created_by: string
           current_user_count: number
           description: string | null
-          final_demo_link: string | null
-          final_pitch_link: string | null
-          final_repo_link: string | null
-          final_summary: string | null
           id: string
           is_private: boolean
           join_code: string
@@ -146,10 +142,6 @@ export type Database = {
           created_by: string
           current_user_count?: number
           description?: string | null
-          final_demo_link?: string | null
-          final_pitch_link?: string | null
-          final_repo_link?: string | null
-          final_summary?: string | null
           id?: string
           is_private?: boolean
           join_code: string
@@ -164,10 +156,6 @@ export type Database = {
           created_by?: string
           current_user_count?: number
           description?: string | null
-          final_demo_link?: string | null
-          final_pitch_link?: string | null
-          final_repo_link?: string | null
-          final_summary?: string | null
           id?: string
           is_private?: boolean
           join_code?: string

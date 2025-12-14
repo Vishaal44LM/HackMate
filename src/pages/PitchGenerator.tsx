@@ -5,8 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import OutputCard from "@/components/OutputCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import FocusModeToggle from "@/components/FocusModeToggle";
-import { useFocusMode } from "@/hooks/useFocusMode";
 import { callEdgeFunctionWithRetry } from "@/lib/edgeFunctions";
 
 const PitchGenerator = () => {
@@ -17,7 +15,6 @@ const PitchGenerator = () => {
     return sessionStorage.getItem('hackmate_pitch') !== null;
   });
   const { toast } = useToast();
-  const { isFocusMode } = useFocusMode();
 
   useEffect(() => {
     sessionStorage.setItem('hackmate_pitch_summary', summary);
