@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_pinned: boolean
+          message: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_pinned?: boolean
+          message: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_pinned?: boolean
+          message?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      organizer_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizer_comments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_ai_suggestions: {
         Row: {
           created_at: string
@@ -92,6 +157,7 @@ export type Database = {
           joined_at: string
           last_seen: string
           room_id: string
+          room_role: Database["public"]["Enums"]["room_role"]
           user_id: string
         }
         Insert: {
@@ -101,6 +167,7 @@ export type Database = {
           joined_at?: string
           last_seen?: string
           room_id: string
+          room_role?: Database["public"]["Enums"]["room_role"]
           user_id: string
         }
         Update: {
@@ -110,6 +177,7 @@ export type Database = {
           joined_at?: string
           last_seen?: string
           room_id?: string
+          room_role?: Database["public"]["Enums"]["room_role"]
           user_id?: string
         }
         Relationships: [
@@ -179,6 +247,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -186,6 +275,13 @@ export type Database = {
     Functions: {
       cleanup_inactive_participants: { Args: never; Returns: undefined }
       generate_join_code: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       join_room:
         | {
             Args: { p_device_id?: string; p_room_id: string; p_user_id: string }
@@ -214,7 +310,8 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "participant" | "organizer" | "judge"
+      room_role: "member" | "organizer" | "judge"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -341,6 +438,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["participant", "organizer", "judge"],
+      room_role: ["member", "organizer", "judge"],
+    },
   },
 } as const
