@@ -4,10 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
-import { FocusModeProvider, useFocusMode } from "./hooks/useFocusMode";
 import Navigation from "./components/Navigation";
 import ProgressBar from "./components/ProgressBar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AnnouncementStrip from "./components/AnnouncementStrip";
 import Home from "./pages/Home";
 import IdeaGenerator from "./pages/IdeaGenerator";
 import ExpandIdea from "./pages/ExpandIdea";
@@ -18,17 +18,17 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Room from "./pages/Room";
 import JoinRoom from "./pages/JoinRoom";
+import Announcements from "./pages/Announcements";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { isFocusMode } = useFocusMode();
-
   return (
-    <div className={`app-root transition-all duration-300 ${isFocusMode ? 'focus-mode' : ''}`}>
+    <div className="app-root transition-all duration-300">
       <Navigation />
       <ProgressBar />
+      <AnnouncementStrip />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/ideas" element={<IdeaGenerator />} />
@@ -55,6 +55,14 @@ const AppContent = () => {
           } 
         />
         <Route path="/join/:roomId" element={<JoinRoom />} />
+        <Route 
+          path="/announcements" 
+          element={
+            <ProtectedRoute>
+              <Announcements />
+            </ProtectedRoute>
+          } 
+        />
         {/* Legacy routes redirect */}
         <Route path="/ideation-rooms" element={<Navigate to="/dashboard" replace />} />
         <Route path="/ideation-rooms/:roomId" element={<Navigate to="/dashboard" replace />} />
@@ -70,15 +78,13 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <FocusModeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
-      </FocusModeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
