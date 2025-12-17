@@ -98,7 +98,7 @@ const Login = () => {
           variant="ghost"
           size="sm"
           onClick={() => navigate(-1)}
-          className="gap-2 text-muted-foreground hover:text-foreground"
+          className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 focus-visible:ring-muted focus-visible:bg-muted/30"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
