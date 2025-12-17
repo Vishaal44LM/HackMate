@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users, LogIn } from "lucide-react";
+import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 
 const Navigation = () => {
   const location = useLocation();
@@ -51,15 +50,6 @@ const Navigation = () => {
                 </Link>
               );
             })}
-            
-            {!loading && !user && (
-              <Link to="/login">
-                <Button variant="outline" size="sm" className="ml-2 gap-2">
-                  <LogIn className="h-4 w-4" />
-                  Login
-                </Button>
-              </Link>
-            )}
           </div>
 
           <div className="md:hidden flex items-center gap-2">
@@ -81,12 +71,6 @@ const Navigation = () => {
                 </Link>
               );
             })}
-            
-            {!loading && !user && (
-              <Link to="/login" className="p-2 rounded-lg hover:bg-muted text-muted-foreground">
-                <LogIn className="h-5 w-5" />
-              </Link>
-            )}
           </div>
         </div>
       </div>

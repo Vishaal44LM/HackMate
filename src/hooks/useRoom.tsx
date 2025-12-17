@@ -432,7 +432,8 @@ export const useRooms = () => {
         max_participants: 5,
         current_user_count: 0,
         status: 'active',
-        is_private: true
+        is_private: true,
+        join_code: '' // Placeholder - trigger will generate the actual code
       })
       .select()
       .single();
