@@ -13,6 +13,7 @@ import ExpandIdea from "./pages/ExpandIdea";
 import PitchGenerator from "./pages/PitchGenerator";
 import JudgeQA from "./pages/JudgeQA";
 import MyIdeas from "./pages/MyIdeas";
+import FreeApis from "./pages/FreeApis";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Room from "./pages/Room";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/pitch" element={<PitchGenerator />} />
             <Route path="/judge-qa" element={<JudgeQA />} />
             <Route path="/my-ideas" element={<MyIdeas />} />
+            <Route path="/free-apis" element={<FreeApis />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth" element={<Navigate to="/login" replace />} />
             <Route 

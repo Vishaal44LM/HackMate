@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users } from "lucide-react";
+import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const Navigation = () => {
@@ -12,6 +12,7 @@ const Navigation = () => {
     { path: "/pitch", label: "Pitch", icon: Megaphone },
     { path: "/judge-qa", label: "Judge Q&A", icon: Scale },
     { path: "/my-ideas", label: "My Ideas", icon: BookmarkCheck },
+    { path: "/free-apis", label: "Free APIs", icon: Zap },
     { path: "/dashboard", label: "Rooms", icon: Users },
   ];
 
