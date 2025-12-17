@@ -24,7 +24,7 @@ const FREE_API_PROVIDERS = [
     id: "openrouter",
     name: "OpenRouter",
     tagline: "Unified interface for many LLM providers.",
-    badge: "Low-cost / promo credits",
+    badge: "Free tier available",
     category: "LLM router",
     link: "https://openrouter.ai/models?fmt=cards&input_modalities=text%2Cimage&order=pricing-low-to-high",
     description:
