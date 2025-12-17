@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Expand } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Expand, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -92,6 +93,24 @@ const ExpandIdea = () => {
               <Expand className="mr-2 h-5 w-5" />
               Expand Idea
             </Button>
+            
+            {/* Free APIs link */}
+            <div className="mt-4 p-4 bg-muted/50 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground text-sm">Need AI APIs?</p>
+                  <p className="text-xs text-muted-foreground">Browse free and low-cost providers for hackathons</p>
+                </div>
+              </div>
+              <Link to="/free-apis">
+                <Button variant="outline" size="sm">
+                  Open Free APIs
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {loading && <LoadingSpinner />}
