@@ -546,27 +546,33 @@ export const useRooms = () => {
     if (!user) return { success: false, error: 'Not authenticated' };
     
     try {
+      // Create room - pass empty join_code, the database trigger will generate it
       const { data, error: insertError } = await supabase
         .from('rooms')
         .insert({
-          name,
-          theme,
-          description,
+          name: name.trim(),
+          theme: theme.trim(),
+          description: description?.trim() || null,
           created_by: user.id,
           max_participants: 5,
           current_user_count: 0,
           status: 'active',
           is_private: true,
-          join_code: '' // Trigger will generate
+          join_code: '' // Trigger will generate the actual code
         })
-        .select()
+        .select('id, join_code')
         .single();
       
       if (insertError) {
+        console.error('Room creation error:', insertError);
         return { success: false, error: insertError.message };
       }
       
-      // Join as creator atomically
+      if (!data) {
+        return { success: false, error: 'Room creation failed - no data returned' };
+      }
+      
+      // Join as creator atomically - creator doesn't need join code
       const { error: joinError } = await supabase.rpc('join_room', {
         p_room_id: data.id,
         p_user_id: user.id,
@@ -575,13 +581,15 @@ export const useRooms = () => {
       });
       
       if (joinError) {
-        return { success: false, error: joinError.message, roomId: data.id };
+        console.error('Join room error after creation:', joinError);
+        // Room was created but join failed - still return room info
+        return { success: true, roomId: data.id, joinCode: data.join_code, warning: 'Room created but auto-join failed' };
       }
       
       return { success: true, roomId: data.id, joinCode: data.join_code };
     } catch (e) {
-      console.error('Create room error:', e);
-      return { success: false, error: 'Failed to create room' };
+      console.error('Create room exception:', e);
+      return { success: false, error: 'Failed to create room - please try again' };
     }
   }, [user]);
 
