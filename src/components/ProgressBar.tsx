@@ -13,13 +13,21 @@ const steps = [
 const ProgressBar = () => {
   const location = useLocation();
   
+  // Hide progress bar on login, dashboard, room pages, and join pages
+  if (location.pathname === '/login' || 
+      location.pathname === '/dashboard' || 
+      location.pathname.startsWith('/rooms/') ||
+      location.pathname.startsWith('/join/')) {
+    return null;
+  }
+  
   const getCurrentStep = () => {
     const path = location.pathname;
-    if (path === "/") return 1;
+    if (path === "/" || path === "/ideas") return 2;
     if (path === "/expand") return 3;
     if (path === "/pitch") return 4;
     if (path === "/judge-qa") return 5;
-    if (path === "/my-ideas") return 6;
+    if (path === "/my-ideas" || path === "/free-apis") return 6;
     return 1;
   };
 

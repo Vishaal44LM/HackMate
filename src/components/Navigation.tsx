@@ -19,8 +19,10 @@ const Navigation = () => {
   // Don't show nav on login page
   if (location.pathname === '/login') return null;
 
-  // Don't show nav on room pages (they have their own header)
-  if (location.pathname.startsWith('/rooms/') || location.pathname.startsWith('/join/')) return null;
+  // Don't show nav on room pages or dashboard (they have their own header/nav)
+  if (location.pathname.startsWith('/rooms/') || 
+      location.pathname.startsWith('/join/') ||
+      location.pathname === '/dashboard') return null;
 
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">

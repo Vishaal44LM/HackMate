@@ -60,17 +60,29 @@ const Login = () => {
 
     try {
       if (isLogin) {
-        const { error } = await signInWithEmail(email, password);
-        if (error) throw error;
+        const { error } = await signInWithEmail(email.trim(), password);
+        if (error) {
+          // Handle specific error cases
+          if (error.message?.includes('Invalid login credentials')) {
+            throw new Error("Invalid email or password. Please check your credentials.");
+          }
+          if (error.message?.includes('Email not confirmed')) {
+            throw new Error("Please check your email to confirm your account.");
+          }
+          throw error;
+        }
         toast({
           title: "Welcome back!",
           description: "You've successfully logged in."
         });
       } else {
-        const { error } = await signUpWithEmail(email, password);
+        const { error } = await signUpWithEmail(email.trim(), password);
         if (error) {
-          if (error.message?.includes('already registered')) {
+          if (error.message?.includes('already registered') || error.message?.includes('User already registered')) {
             throw new Error("This email is already registered. Please login instead.");
+          }
+          if (error.message?.includes('Password should be')) {
+            throw new Error("Password must be at least 6 characters long.");
           }
           throw error;
         }
@@ -80,6 +92,7 @@ const Login = () => {
         });
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
         title: "Authentication Error",
         description: error.message || "Something went wrong. Please try again.",
