@@ -186,8 +186,20 @@ const Dashboard = () => {
   };
 
   const handleLogout = async () => {
-    await signOut();
-    navigate("/login");
+    try {
+      await signOut();
+      // Small delay to ensure auth state updates
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 100);
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to logout. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) return <LoadingSpinner />;

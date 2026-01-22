@@ -546,7 +546,12 @@ export const useRooms = () => {
     if (!user) return { success: false, error: 'Not authenticated' };
     
     try {
-      // Create room - pass empty join_code, the database trigger will generate it
+      // Generate a temporary code that will be replaced by the trigger
+      const tempCode = Array.from({ length: 6 }, () => 
+        'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]
+      ).join('');
+      
+      // Create room with pre-generated code (trigger may override)
       const { data, error: insertError } = await supabase
         .from('rooms')
         .insert({
@@ -558,7 +563,7 @@ export const useRooms = () => {
           current_user_count: 0,
           status: 'active',
           is_private: true,
-          join_code: '' // Trigger will generate the actual code
+          join_code: tempCode
         })
         .select('id, join_code')
         .single();
@@ -573,7 +578,7 @@ export const useRooms = () => {
       }
       
       // Join as creator atomically - creator doesn't need join code
-      const { error: joinError } = await supabase.rpc('join_room', {
+      const { data: joinData, error: joinError } = await supabase.rpc('join_room', {
         p_room_id: data.id,
         p_user_id: user.id,
         p_device_id: getDeviceId(),
@@ -582,16 +587,18 @@ export const useRooms = () => {
       
       if (joinError) {
         console.error('Join room error after creation:', joinError);
-        // Room was created but join failed - still return room info
         return { success: true, roomId: data.id, joinCode: data.join_code, warning: 'Room created but auto-join failed' };
       }
+      
+      // Refresh rooms list after creation
+      await Promise.all([fetchRooms(), fetchMyRooms()]);
       
       return { success: true, roomId: data.id, joinCode: data.join_code };
     } catch (e) {
       console.error('Create room exception:', e);
       return { success: false, error: 'Failed to create room - please try again' };
     }
-  }, [user]);
+  }, [user, fetchRooms, fetchMyRooms]);
 
   // Optimized realtime subscription
   useEffect(() => {
