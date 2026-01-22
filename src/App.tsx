@@ -14,6 +14,7 @@ import PitchGenerator from "./pages/PitchGenerator";
 import JudgeQA from "./pages/JudgeQA";
 import MyIdeas from "./pages/MyIdeas";
 import FreeApis from "./pages/FreeApis";
+import Flowchart from "./pages/Flowchart";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Room from "./pages/Room";
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/judge-qa" element={<JudgeQA />} />
             <Route path="/my-ideas" element={<MyIdeas />} />
             <Route path="/free-apis" element={<FreeApis />} />
+            <Route path="/flowcharts" element={<Flowchart />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth" element={<Navigate to="/login" replace />} />
             <Route 
