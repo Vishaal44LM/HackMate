@@ -93,42 +93,48 @@ const Flowchart = () => {
     
     const lines = mermaid.split('\n').filter(line => line.trim() && !line.trim().startsWith('graph'));
     
-    let yOffset = 80;
-    let xBase = 200;
+    // Start with better initial positioning - centered in canvas
+    let yOffset = 60;
+    const xBase = 100;
+    const nodeWidth = 150;
+    const nodeHeight = 50;
+    const verticalSpacing = 120;
     
     lines.forEach((line, index) => {
       // Parse arrow connections: A --> B or A -->|label| B
-      const arrowMatch = line.match(/(\w+)(?:\[([^\]]+)\])?\s*-->(?:\|([^|]+)\|)?\s*(\w+)(?:\[([^\]]+)\])?/);
+      const arrowMatch = line.match(/(\w+)(?:\[([^\]]+)\]|\(([^)]+)\)|\{([^}]+)\})?\s*-->(?:\|([^|]+)\|)?\s*(\w+)(?:\[([^\]]+)\]|\(([^)]+)\)|\{([^}]+)\})?/);
       
       if (arrowMatch) {
-        const [, fromId, fromLabel, connLabel, toId, toLabel] = arrowMatch;
+        const [, fromId, fromLabel1, fromLabel2, fromLabel3, connLabel, toId, toLabel1, toLabel2, toLabel3] = arrowMatch;
+        const fromLabel = fromLabel1 || fromLabel2 || fromLabel3 || fromId;
+        const toLabel = toLabel1 || toLabel2 || toLabel3 || toId;
         
         // Create source node if not exists
         if (!nodeMap[fromId]) {
           const node: FlowNode = {
             id: fromId,
-            label: fromLabel || fromId,
-            x: xBase + (index % 2) * 100,
+            label: fromLabel,
+            x: xBase,
             y: yOffset,
-            type: index === 0 ? 'start' : 'process'
+            type: nodes.length === 0 ? 'start' : (fromLabel3 ? 'decision' : 'process')
           };
           nodeMap[fromId] = node;
           nodes.push(node);
-          yOffset += 100;
+          yOffset += verticalSpacing;
         }
         
         // Create target node if not exists
         if (!nodeMap[toId]) {
           const node: FlowNode = {
             id: toId,
-            label: toLabel || toId,
-            x: xBase + ((index + 1) % 2) * 100,
+            label: toLabel,
+            x: xBase,
             y: yOffset,
-            type: 'process'
+            type: toLabel3 ? 'decision' : 'process'
           };
           nodeMap[toId] = node;
           nodes.push(node);
-          yOffset += 100;
+          yOffset += verticalSpacing;
         }
         
         connections.push({ from: fromId, to: toId, label: connLabel });
@@ -142,6 +148,56 @@ const Flowchart = () => {
     
     return { nodes, connections };
   };
+
+  // Calculate bounds of all nodes for auto-fitting
+  const calculateBounds = (nodes: FlowNode[]) => {
+    if (nodes.length === 0) return { minX: 0, minY: 0, maxX: 800, maxY: 600, width: 800, height: 600 };
+    
+    const nodeWidth = 150;
+    const nodeHeight = 50;
+    const padding = 80;
+    
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    nodes.forEach(node => {
+      minX = Math.min(minX, node.x);
+      minY = Math.min(minY, node.y);
+      maxX = Math.max(maxX, node.x + nodeWidth);
+      maxY = Math.max(maxY, node.y + nodeHeight);
+    });
+    
+    return {
+      minX: minX - padding,
+      minY: minY - padding,
+      maxX: maxX + padding,
+      maxY: maxY + padding,
+      width: maxX - minX + padding * 2,
+      height: maxY - minY + padding * 2
+    };
+  };
+
+  // Auto-fit view when flowchart changes
+  useEffect(() => {
+    if (currentFlowchart && canvasRef.current) {
+      const bounds = calculateBounds(currentFlowchart.nodes);
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+      
+      // Calculate zoom to fit all nodes
+      const scaleX = canvasRect.width / bounds.width;
+      const scaleY = canvasRect.height / bounds.height;
+      const newZoom = Math.min(scaleX, scaleY, 1.2);
+      
+      // Calculate pan to center
+      const centerX = (bounds.minX + bounds.maxX) / 2;
+      const centerY = (bounds.minY + bounds.maxY) / 2;
+      
+      setZoom(Math.max(0.5, Math.min(newZoom, 1.5)));
+      setPan({
+        x: canvasRect.width / 2 - centerX * newZoom,
+        y: canvasRect.height / 2 - centerY * newZoom
+      });
+    }
+  }, [currentFlowchart?.id]);
 
   const generateFlowchart = async () => {
     if (!processInput.trim()) {
@@ -318,30 +374,85 @@ const Flowchart = () => {
   };
 
   const createSVGFromFlowchart = (flowchart: Flowchart): string => {
-    const width = 800;
-    const height = 600;
+    const bounds = calculateBounds(flowchart.nodes);
+    const nodeWidth = 150;
+    const nodeHeight = 50;
+    const padding = 40;
+    
+    // Calculate actual dimensions based on node positions
+    const width = Math.max(bounds.width + padding * 2, 400);
+    const height = Math.max(bounds.height + padding * 2, 300);
+    
+    // Offset to normalize coordinates (start from padding)
+    const offsetX = -bounds.minX + padding;
+    const offsetY = -bounds.minY + padding;
     
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
-    svg += `<rect width="100%" height="100%" fill="#0a0a0a"/>`;
     
-    // Draw connections
+    // Background
+    svg += `<rect width="100%" height="100%" fill="#0f172a"/>`;
+    
+    // Define arrowhead marker FIRST (before using it)
+    svg += `<defs>
+      <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto" markerUnits="strokeWidth">
+        <polygon points="0 0, 12 4, 0 8" fill="#3b82f6"/>
+      </marker>
+      <linearGradient id="startGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#22c55e"/>
+        <stop offset="100%" style="stop-color:#10b981"/>
+      </linearGradient>
+      <linearGradient id="endGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#ef4444"/>
+        <stop offset="100%" style="stop-color:#dc2626"/>
+      </linearGradient>
+      <linearGradient id="processGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#3b82f6"/>
+        <stop offset="100%" style="stop-color:#6366f1"/>
+      </linearGradient>
+      <linearGradient id="decisionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#f59e0b"/>
+        <stop offset="100%" style="stop-color:#ea580c"/>
+      </linearGradient>
+    </defs>`;
+    
+    // Draw connections with proper curved paths
     flowchart.connections.forEach(conn => {
       const fromNode = flowchart.nodes.find(n => n.id === conn.from);
       const toNode = flowchart.nodes.find(n => n.id === conn.to);
       if (fromNode && toNode) {
-        svg += `<line x1="${fromNode.x + 75}" y1="${fromNode.y + 30}" x2="${toNode.x + 75}" y2="${toNode.y}" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowhead)"/>`;
+        const startX = fromNode.x + offsetX + nodeWidth / 2;
+        const startY = fromNode.y + offsetY + nodeHeight;
+        const endX = toNode.x + offsetX + nodeWidth / 2;
+        const endY = toNode.y + offsetY;
+        
+        // Calculate control points for smooth curve
+        const midY = (startY + endY) / 2;
+        
+        svg += `<path d="M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY - 8}" fill="none" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowhead)"/>`;
+        
+        // Connection label
+        if (conn.label) {
+          svg += `<text x="${(startX + endX) / 2}" y="${midY}" text-anchor="middle" fill="#94a3b8" font-family="Arial, sans-serif" font-size="11" font-weight="500">${conn.label}</text>`;
+        }
       }
     });
     
     // Draw nodes
     flowchart.nodes.forEach(node => {
-      const fill = node.type === 'start' ? '#22c55e' : node.type === 'end' ? '#ef4444' : '#3b82f6';
-      svg += `<rect x="${node.x}" y="${node.y}" width="150" height="40" rx="8" fill="${fill}" opacity="0.9"/>`;
-      svg += `<text x="${node.x + 75}" y="${node.y + 25}" text-anchor="middle" fill="white" font-family="sans-serif" font-size="12">${node.label}</text>`;
+      const x = node.x + offsetX;
+      const y = node.y + offsetY;
+      const gradientId = node.type === 'start' ? 'startGradient' : 
+                         node.type === 'end' ? 'endGradient' : 
+                         node.type === 'decision' ? 'decisionGradient' : 'processGradient';
+      
+      // Node background with gradient
+      svg += `<rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="12" fill="url(#${gradientId})" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.3))"/>`;
+      
+      // Node label
+      const label = node.label.length > 20 ? node.label.substring(0, 18) + '...' : node.label;
+      svg += `<text x="${x + nodeWidth / 2}" y="${y + nodeHeight / 2 + 5}" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="13" font-weight="600">${label}</text>`;
     });
     
-    // Add arrowhead marker
-    svg += `<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/></marker></defs>`;
     svg += `</svg>`;
     
     return svg;
@@ -536,14 +647,16 @@ const Flowchart = () => {
                   </div>
                 ) : (
                   <div
-                    className="absolute inset-0"
+                    className="absolute"
                     style={{
                       transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                      transformOrigin: 'center center'
+                      transformOrigin: '0 0',
+                      width: '2000px',
+                      height: '2000px'
                     }}
                   >
                     {/* Grid */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ width: '2000px', height: '2000px' }}>
                       <defs>
                         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
                           <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-border/30" />
@@ -552,18 +665,26 @@ const Flowchart = () => {
                       <rect width="100%" height="100%" fill="url(#grid)" />
                     </svg>
 
-                    {/* Connections */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                    {/* Connections - SVG with proper dimensions */}
+                    <svg 
+                      className="absolute pointer-events-none" 
+                      style={{ 
+                        width: '2000px', 
+                        height: '2000px',
+                        overflow: 'visible'
+                      }}
+                    >
                       <defs>
                         <marker
-                          id="arrowhead"
-                          markerWidth="10"
-                          markerHeight="7"
-                          refX="10"
-                          refY="3.5"
+                          id="arrowhead-canvas"
+                          markerWidth="12"
+                          markerHeight="8"
+                          refX="11"
+                          refY="4"
                           orient="auto"
+                          markerUnits="strokeWidth"
                         >
-                          <polygon points="0 0, 10 3.5, 0 7" className="fill-primary" />
+                          <polygon points="0 0, 12 4, 0 8" className="fill-primary" />
                         </marker>
                       </defs>
                       {currentFlowchart.connections.map((conn, i) => {
@@ -571,26 +692,33 @@ const Flowchart = () => {
                         const toNode = currentFlowchart.nodes.find(n => n.id === conn.to);
                         if (!fromNode || !toNode) return null;
                         
-                        const startX = fromNode.x + 75;
-                        const startY = fromNode.y + 40;
-                        const endX = toNode.x + 75;
+                        const nodeWidth = 150;
+                        const nodeHeight = 50;
+                        const startX = fromNode.x + nodeWidth / 2;
+                        const startY = fromNode.y + nodeHeight;
+                        const endX = toNode.x + nodeWidth / 2;
                         const endY = toNode.y;
+                        
+                        // Smooth bezier curve
+                        const midY = (startY + endY) / 2;
                         
                         return (
                           <g key={i}>
                             <path
-                              d={`M ${startX} ${startY} C ${startX} ${startY + 30}, ${endX} ${endY - 30}, ${endX} ${endY - 5}`}
+                              d={`M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY - 8}`}
                               fill="none"
                               stroke="hsl(var(--primary))"
-                              strokeWidth="2"
-                              markerEnd="url(#arrowhead)"
+                              strokeWidth="2.5"
+                              markerEnd="url(#arrowhead-canvas)"
                             />
                             {conn.label && (
                               <text
                                 x={(startX + endX) / 2}
-                                y={(startY + endY) / 2}
+                                y={midY}
                                 textAnchor="middle"
-                                className="fill-muted-foreground text-xs"
+                                className="fill-muted-foreground"
+                                fontSize="11"
+                                fontWeight="500"
                               >
                                 {conn.label}
                               </text>
@@ -604,8 +732,8 @@ const Flowchart = () => {
                     {currentFlowchart.nodes.map((node) => (
                       <div
                         key={node.id}
-                        className={`absolute cursor-pointer select-none transition-shadow hover:shadow-lg`}
-                        style={{ left: node.x, top: node.y }}
+                        className="absolute cursor-pointer select-none transition-all hover:shadow-xl hover:scale-105"
+                        style={{ left: node.x, top: node.y, width: '150px' }}
                         draggable
                         onDragEnd={(e) => {
                           const rect = canvasRef.current?.getBoundingClientRect();
@@ -618,8 +746,8 @@ const Flowchart = () => {
                           setEditingNode(node.id);
                         }}
                       >
-                        <div className={`w-[150px] rounded-xl bg-gradient-to-br ${getNodeColor(node.type)} p-0.5 shadow-md`}>
-                          <div className="bg-card rounded-[10px] px-4 py-2.5">
+                        <div className={`rounded-xl bg-gradient-to-br ${getNodeColor(node.type)} p-0.5 shadow-lg`}>
+                          <div className="bg-card rounded-[10px] px-4 py-3 min-h-[50px] flex items-center justify-center">
                             {editingNode === node.id ? (
                               <input
                                 autoFocus
@@ -634,13 +762,13 @@ const Flowchart = () => {
                                 onClick={(e) => e.stopPropagation()}
                               />
                             ) : (
-                              <p className="text-sm font-medium text-center truncate">{node.label}</p>
+                              <p className="text-sm font-medium text-center leading-tight">{node.label}</p>
                             )}
                           </div>
                         </div>
                         <Badge 
                           variant="outline" 
-                          className="absolute -top-2 -right-2 text-[10px] px-1.5 capitalize bg-background"
+                          className="absolute -top-2 -right-2 text-[10px] px-1.5 capitalize bg-background border-primary/30"
                         >
                           {node.type}
                         </Badge>
