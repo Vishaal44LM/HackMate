@@ -3,13 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   Sparkles,
@@ -53,12 +46,7 @@ interface Flowchart {
   createdAt: Date;
 }
 
-const TEMPLATES = [
-  { id: "user-journey", name: "User Journey", prompt: "User signs up → onboards → uses features → becomes power user" },
-  { id: "data-pipeline", name: "Data Pipeline", prompt: "Collect data → Clean → Transform → Analyze → Report" },
-  { id: "payment-flow", name: "Payment Flow", prompt: "Cart → Checkout → Payment → Verification → Confirmation" },
-  { id: "auth-flow", name: "Auth Flow", prompt: "Login page → Validate credentials → Success? → Dashboard or Error" },
-];
+// No templates - fully manual user input
 
 const Flowchart = () => {
   const { user } = useAuth();
@@ -73,7 +61,7 @@ const Flowchart = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [editingNode, setEditingNode] = useState<string | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  // Template state removed - fully manual input
   const [showHistory, setShowHistory] = useState(true);
 
   // Load recent flowcharts from localStorage
@@ -249,13 +237,7 @@ const Flowchart = () => {
     return mermaid;
   };
 
-  const handleTemplateSelect = (templateId: string) => {
-    const template = TEMPLATES.find(t => t.id === templateId);
-    if (template) {
-      setProcessInput(template.prompt);
-      setSelectedTemplate(templateId);
-    }
-  };
+  // Template functionality removed - fully manual input
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.2, 2));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.2, 0.5));
@@ -415,28 +397,11 @@ const Flowchart = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Templates */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Quick templates</label>
-                  <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a template..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TEMPLATES.map(template => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <Textarea
                   value={processInput}
                   onChange={(e) => setProcessInput(e.target.value)}
-                  placeholder="User logs in → dashboard → payment → success&#10;&#10;Or describe in natural language..."
-                  className="min-h-[120px] resize-none"
+                  placeholder="Describe any project, process, or system...&#10;&#10;Examples:&#10;• E-commerce checkout flow&#10;• User authentication with OAuth&#10;• ML training pipeline&#10;• Mobile app architecture"
+                  className="min-h-[140px] resize-none"
                 />
 
                 <Button 
