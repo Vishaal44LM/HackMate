@@ -71,6 +71,16 @@ const Room = () => {
     }
   }, [user, participants]);
 
+  // Store active room ID for quick return navigation
+  useEffect(() => {
+    if (roomId) {
+      sessionStorage.setItem('hackmate_active_room', roomId);
+    }
+    return () => {
+      // Don't clear on unmount - we want to preserve for navigation back
+    };
+  }, [roomId]);
+
   // Join room on mount
   useEffect(() => {
     const attemptJoin = async () => {

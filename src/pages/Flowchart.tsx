@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import BackToRoomBanner from "@/components/BackToRoomBanner";
 
 interface FlowNode {
   id: string;
@@ -555,6 +556,7 @@ const Flowchart = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pt-4">
+      <BackToRoomBanner />
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Header */}
         <div className="mb-6">
