@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import OutputCard from "@/components/OutputCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { callEdgeFunctionWithRetry } from "@/lib/edgeFunctions";
+import BackToRoomBanner from "@/components/BackToRoomBanner";
 
 const PitchGenerator = () => {
   const [summary, setSummary] = useState(() => sessionStorage.getItem('hackmate_pitch_summary') || "");
@@ -64,6 +65,7 @@ const PitchGenerator = () => {
 
   return (
     <div className="min-h-screen bg-[var(--gradient-subtle)]">
+      <BackToRoomBanner />
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
