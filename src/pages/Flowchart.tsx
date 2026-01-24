@@ -353,21 +353,63 @@ const Flowchart = () => {
   };
 
   const downloadPNG = async () => {
-    if (!canvasRef.current || !currentFlowchart) return;
+    if (!currentFlowchart) return;
     
     try {
-      // Create a simple SVG representation
+      // Create SVG first
       const svg = createSVGFromFlowchart(currentFlowchart);
-      const blob = new Blob([svg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
       
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `flowchart-${Date.now()}.svg`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Convert SVG to PNG using canvas
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas not supported');
       
-      toast({ title: "Downloaded!", description: "Flowchart saved as SVG." });
+      // Parse SVG dimensions
+      const svgMatch = svg.match(/width="(\d+)" height="(\d+)"/);
+      const svgWidth = svgMatch ? parseInt(svgMatch[1]) : 800;
+      const svgHeight = svgMatch ? parseInt(svgMatch[2]) : 600;
+      
+      // Set canvas size with high DPI for better quality
+      const scale = 2;
+      canvas.width = svgWidth * scale;
+      canvas.height = svgHeight * scale;
+      ctx.scale(scale, scale);
+      
+      // Create image from SVG
+      const img = new Image();
+      const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      
+      img.onload = () => {
+        // Draw background
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, svgWidth, svgHeight);
+        
+        // Draw the SVG
+        ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+        
+        // Convert to PNG and download
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `flowchart-${Date.now()}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        }, 'image/png', 1.0);
+        
+        URL.revokeObjectURL(svgUrl);
+        toast({ title: "Downloaded!", description: "Flowchart saved as PNG image." });
+      };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(svgUrl);
+        toast({ title: "Error", description: "Failed to generate image.", variant: "destructive" });
+      };
+      
+      img.src = svgUrl;
     } catch (e) {
       toast({ title: "Error", description: "Failed to download.", variant: "destructive" });
     }
@@ -375,13 +417,13 @@ const Flowchart = () => {
 
   const createSVGFromFlowchart = (flowchart: Flowchart): string => {
     const bounds = calculateBounds(flowchart.nodes);
-    const nodeWidth = 150;
-    const nodeHeight = 50;
-    const padding = 40;
+    const nodeWidth = 180;
+    const nodeHeight = 60;
+    const padding = 60;
     
-    // Calculate actual dimensions based on node positions
-    const width = Math.max(bounds.width + padding * 2, 400);
-    const height = Math.max(bounds.height + padding * 2, 300);
+    // Calculate actual dimensions based on node positions with more padding
+    const width = Math.max(bounds.width + padding * 2, 500);
+    const height = Math.max(bounds.height + padding * 2, 400);
     
     // Offset to normalize coordinates (start from padding)
     const offsetX = -bounds.minX + padding;
@@ -389,17 +431,18 @@ const Flowchart = () => {
     
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
     
-    // Background
-    svg += `<rect width="100%" height="100%" fill="#0f172a"/>`;
-    
-    // Define arrowhead marker FIRST (before using it)
+    // Background with subtle gradient
     svg += `<defs>
-      <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="11" refY="4" orient="auto" markerUnits="strokeWidth">
-        <polygon points="0 0, 12 4, 0 8" fill="#3b82f6"/>
+      <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#0f172a"/>
+        <stop offset="100%" style="stop-color:#1e293b"/>
+      </linearGradient>
+      <marker id="arrowhead" markerWidth="14" markerHeight="10" refX="12" refY="5" orient="auto" markerUnits="strokeWidth">
+        <polygon points="0 0, 14 5, 0 10" fill="#60a5fa"/>
       </marker>
       <linearGradient id="startGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style="stop-color:#22c55e"/>
-        <stop offset="100%" style="stop-color:#10b981"/>
+        <stop offset="100%" style="stop-color:#16a34a"/>
       </linearGradient>
       <linearGradient id="endGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style="stop-color:#ef4444"/>
@@ -407,15 +450,27 @@ const Flowchart = () => {
       </linearGradient>
       <linearGradient id="processGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style="stop-color:#3b82f6"/>
-        <stop offset="100%" style="stop-color:#6366f1"/>
+        <stop offset="100%" style="stop-color:#8b5cf6"/>
       </linearGradient>
       <linearGradient id="decisionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" style="stop-color:#f59e0b"/>
         <stop offset="100%" style="stop-color:#ea580c"/>
       </linearGradient>
+      <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.4"/>
+      </filter>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
     </defs>`;
     
-    // Draw connections with proper curved paths
+    svg += `<rect width="100%" height="100%" fill="url(#bgGradient)"/>`;
+    
+    // Draw connections with proper curved paths - thicker and more visible
     flowchart.connections.forEach(conn => {
       const fromNode = flowchart.nodes.find(n => n.id === conn.from);
       const toNode = flowchart.nodes.find(n => n.id === conn.to);
@@ -428,16 +483,22 @@ const Flowchart = () => {
         // Calculate control points for smooth curve
         const midY = (startY + endY) / 2;
         
-        svg += `<path d="M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY - 8}" fill="none" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowhead)"/>`;
+        // Glow effect behind the line
+        svg += `<path d="M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY - 10}" fill="none" stroke="#3b82f6" stroke-width="6" opacity="0.3"/>`;
+        // Main line
+        svg += `<path d="M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY - 10}" fill="none" stroke="#60a5fa" stroke-width="3" marker-end="url(#arrowhead)"/>`;
         
-        // Connection label
+        // Connection label with background
         if (conn.label) {
-          svg += `<text x="${(startX + endX) / 2}" y="${midY}" text-anchor="middle" fill="#94a3b8" font-family="Arial, sans-serif" font-size="11" font-weight="500">${conn.label}</text>`;
+          const labelX = (startX + endX) / 2;
+          const labelY = midY;
+          svg += `<rect x="${labelX - 30}" y="${labelY - 10}" width="60" height="20" rx="4" fill="#1e293b" opacity="0.9"/>`;
+          svg += `<text x="${labelX}" y="${labelY + 4}" text-anchor="middle" fill="#e2e8f0" font-family="Arial, sans-serif" font-size="12" font-weight="600">${conn.label}</text>`;
         }
       }
     });
     
-    // Draw nodes
+    // Draw nodes with enhanced styling
     flowchart.nodes.forEach(node => {
       const x = node.x + offsetX;
       const y = node.y + offsetY;
@@ -445,12 +506,22 @@ const Flowchart = () => {
                          node.type === 'end' ? 'endGradient' : 
                          node.type === 'decision' ? 'decisionGradient' : 'processGradient';
       
-      // Node background with gradient
-      svg += `<rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="12" fill="url(#${gradientId})" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.3))"/>`;
+      // Node shadow and background
+      svg += `<rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="14" fill="url(#${gradientId})" filter="url(#nodeShadow)"/>`;
       
-      // Node label
-      const label = node.label.length > 20 ? node.label.substring(0, 18) + '...' : node.label;
-      svg += `<text x="${x + nodeWidth / 2}" y="${y + nodeHeight / 2 + 5}" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="13" font-weight="600">${label}</text>`;
+      // Inner highlight
+      svg += `<rect x="${x + 2}" y="${y + 2}" width="${nodeWidth - 4}" height="${nodeHeight/2 - 2}" rx="12" fill="white" opacity="0.15"/>`;
+      
+      // Node label - larger and bolder
+      const label = node.label.length > 22 ? node.label.substring(0, 20) + '...' : node.label;
+      svg += `<text x="${x + nodeWidth / 2}" y="${y + nodeHeight / 2 + 6}" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="15" font-weight="700">${label}</text>`;
+      
+      // Type badge
+      const badgeX = x + nodeWidth - 35;
+      const badgeY = y - 8;
+      const badgeColor = node.type === 'start' ? '#22c55e' : node.type === 'end' ? '#ef4444' : node.type === 'decision' ? '#f59e0b' : '#3b82f6';
+      svg += `<rect x="${badgeX}" y="${badgeY}" width="40" height="16" rx="8" fill="${badgeColor}"/>`;
+      svg += `<text x="${badgeX + 20}" y="${badgeY + 11}" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="9" font-weight="600">${node.type.toUpperCase()}</text>`;
     });
     
     svg += `</svg>`;
@@ -616,7 +687,7 @@ const Flowchart = () => {
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={downloadPNG} disabled={!currentFlowchart}>
                     <Download className="w-4 h-4 mr-1" />
-                    <span className="hidden sm:inline">Download SVG</span>
+                    <span className="hidden sm:inline">Download PNG</span>
                   </Button>
                   <Button variant="outline" size="sm" onClick={copyMermaid} disabled={!currentFlowchart}>
                     <Copy className="w-4 h-4 mr-1" />
