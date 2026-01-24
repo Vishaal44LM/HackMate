@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoom } from "@/hooks/useRoom";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,12 @@ import {
   Wifi,
   MonitorSmartphone,
   RefreshCw,
-  Lock
+  Lock,
+  Lightbulb,
+  Megaphone,
+  Scale,
+  GitBranch,
+  ExternalLink
 } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
@@ -406,6 +411,49 @@ const Room = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Quick Tools in mobile */}
+                  <div className="mt-6">
+                    <h3 className="font-semibold flex items-center gap-2 mb-4">
+                      <ExternalLink className="w-5 h-5 text-primary" />
+                      Quick Tools
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link to="/ideas" onClick={() => setShowMobileUsers(false)}>
+                        <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Ideas
+                        </Button>
+                      </Link>
+                      <Link to="/expand" onClick={() => setShowMobileUsers(false)}>
+                        <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                          <Lightbulb className="w-3.5 h-3.5" />
+                          Expand
+                        </Button>
+                      </Link>
+                      <Link to="/pitch" onClick={() => setShowMobileUsers(false)}>
+                        <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                          <Megaphone className="w-3.5 h-3.5" />
+                          Pitch
+                        </Button>
+                      </Link>
+                      <Link to="/judge-qa" onClick={() => setShowMobileUsers(false)}>
+                        <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                          <Scale className="w-3.5 h-3.5" />
+                          Judge Q&A
+                        </Button>
+                      </Link>
+                      <Link to="/flowcharts" className="col-span-2" onClick={() => setShowMobileUsers(false)}>
+                        <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                          <GitBranch className="w-3.5 h-3.5" />
+                          Flowcharts
+                        </Button>
+                      </Link>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Data is saved automatically
+                    </p>
+                  </div>
                 </SheetContent>
               </Sheet>
             </div>
@@ -539,6 +587,53 @@ const Room = () => {
                   ))
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Navigation */}
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ExternalLink className="w-4 h-4 text-primary" />
+                Quick Tools
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-2 gap-2">
+                <Link to="/ideas">
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Ideas
+                  </Button>
+                </Link>
+                <Link to="/expand">
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                    <Lightbulb className="w-3.5 h-3.5" />
+                    Expand
+                  </Button>
+                </Link>
+                <Link to="/pitch">
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                    <Megaphone className="w-3.5 h-3.5" />
+                    Pitch
+                  </Button>
+                </Link>
+                <Link to="/judge-qa">
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                    <Scale className="w-3.5 h-3.5" />
+                    Judge Q&A
+                  </Button>
+                </Link>
+                <Link to="/flowcharts" className="col-span-2">
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 justify-start text-xs">
+                    <GitBranch className="w-3.5 h-3.5" />
+                    Flowcharts
+                  </Button>
+                </Link>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Your data is saved automatically
+              </p>
             </CardContent>
           </Card>
         </div>
