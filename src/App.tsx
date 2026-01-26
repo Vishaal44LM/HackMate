@@ -19,6 +19,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Room from "./pages/Room";
 import JoinRoom from "./pages/JoinRoom";
+import JudgeMode from "./pages/JudgeMode";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/my-ideas" element={<MyIdeas />} />
             <Route path="/free-apis" element={<FreeApis />} />
             <Route path="/flowcharts" element={<Flowchart />} />
+            <Route path="/judge-mode" element={<JudgeMode />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth" element={<Navigate to="/login" replace />} />
             <Route 
