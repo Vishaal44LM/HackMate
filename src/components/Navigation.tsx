@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users, Zap, GitBranch, Code, Menu, Gavel } from "lucide-react";
+import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users, Zap, GitBranch, Code, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
@@ -22,7 +22,6 @@ const Navigation = () => {
     { path: "/my-ideas", label: "My Ideas", icon: BookmarkCheck },
     { path: "/free-apis", label: "Free APIs", icon: Zap },
     { path: "/code-generator", label: "Code Gen", icon: Code },
-    { path: "/judge-mode", label: "Judge Mode", icon: Gavel },
     { path: "/dashboard", label: "Rooms", icon: Users },
   ];
 
