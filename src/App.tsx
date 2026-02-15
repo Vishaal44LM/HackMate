@@ -20,6 +20,7 @@ import Dashboard from "./pages/Dashboard";
 import Room from "./pages/Room";
 import JoinRoom from "./pages/JoinRoom";
 import JudgeMode from "./pages/JudgeMode";
+import CodeGenerator from "./pages/CodeGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/free-apis" element={<FreeApis />} />
             <Route path="/flowcharts" element={<Flowchart />} />
             <Route path="/judge-mode" element={<JudgeMode />} />
+            <Route path="/code-generator" element={<CodeGenerator />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth" element={<Navigate to="/login" replace />} />
             <Route 
