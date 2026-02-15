@@ -1,6 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users, Zap, GitBranch, Code } from "lucide-react";
+import { Sparkles, Lightbulb, Megaphone, Scale, BookmarkCheck, Users, Zap, GitBranch, Code, Menu, Gavel } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 const Navigation = () => {
   const location = useLocation();
@@ -15,6 +22,7 @@ const Navigation = () => {
     { path: "/my-ideas", label: "My Ideas", icon: BookmarkCheck },
     { path: "/free-apis", label: "Free APIs", icon: Zap },
     { path: "/code-generator", label: "Code Gen", icon: Code },
+    { path: "/judge-mode", label: "Judge Mode", icon: Gavel },
     { path: "/dashboard", label: "Rooms", icon: Users },
   ];
 
@@ -35,7 +43,7 @@ const Navigation = () => {
             HackMate
           </Link>
           
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path || 
@@ -57,25 +65,35 @@ const Navigation = () => {
             })}
           </div>
 
-          <div className="md:hidden flex items-center gap-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path ||
-                (item.path === '/dashboard' && location.pathname.startsWith('/dashboard'));
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`p-2 rounded-lg transition-all ${
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted text-muted-foreground"
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                </Link>
-              );
-            })}
+          {/* Hamburger menu for smaller screens */}
+          <div className="lg:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-10 w-10">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 bg-popover z-[100]">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path ||
+                    (item.path === '/dashboard' && location.pathname.startsWith('/dashboard'));
+                  return (
+                    <DropdownMenuItem key={item.path} asChild>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center gap-3 w-full cursor-pointer ${
+                          isActive ? "text-primary font-semibold" : ""
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
